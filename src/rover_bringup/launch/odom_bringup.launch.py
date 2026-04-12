@@ -37,13 +37,7 @@ def generate_launch_description():
             ],
         ),
 
-    Node(
-        package='robot_localization',
-        executable='ekf_node',
-        name='ekf_filter_node',
-        output='screen',
-        parameters=[os.path.join(bringup_dir, 'config', 'ekf.yaml')],
-        ),
+    #deleted efk node
 
 
     ])

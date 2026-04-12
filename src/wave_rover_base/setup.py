@@ -25,7 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'cmd_vel_to_serial = wave_rover_base.cmd_vel_to_serial:main',
-
+            'scan_retimestamp = rover_bringup.scan_retimestamp:main',
         ],
     },
 )
