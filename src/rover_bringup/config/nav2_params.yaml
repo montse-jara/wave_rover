@@ -43,7 +43,7 @@ amcl:
 map_server:
   ros__parameters:
     use_sim_time: false
-    yaml_filename: "/home/ubuntu/ros2_ws/maps/my_map.yaml"
+    yaml_filename: "/home/ubuntu/maps.yaml"
 
 planner_server:
   ros__parameters:
@@ -76,9 +76,9 @@ controller_server:
 
     goal_checker:
       plugin: "nav2_controller::SimpleGoalChecker"
-      stateful: true
-      xy_goal_tolerance: 0.10
-      yaw_goal_tolerance: 0.30
+      stateful: false #changed from true
+      xy_goal_tolerance: 0.15
+      yaw_goal_tolerance: 0.45
 
     FollowPath:
       plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
