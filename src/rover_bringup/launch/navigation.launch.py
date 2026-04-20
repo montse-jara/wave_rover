@@ -14,42 +14,54 @@ def generate_launch_description():
             executable='planner_server',
             name='planner_server',
             output='screen',
-            parameters=[nav2_params]
+            parameters=[nav2_params],
+            # arguments=['--ros-args', '--log-level','planner_server:=debug']
+
         ),
         Node(
             package='nav2_controller',
             executable='controller_server',
             name='controller_server',
             output='screen',
-            parameters=[nav2_params]
+            parameters=[nav2_params],
+            # arguments=['--ros-args', '--log-level', 'controller_server:=debug']
+
         ),
         Node(
             package='nav2_behaviors',
             executable='behavior_server',
             name='behavior_server',
             output='screen',
-            parameters=[nav2_params]
+            parameters=[nav2_params],
+            # arguments=['--ros-args', '--log-level', 'behavior_server:=debug']
+
         ),
         Node(
             package='nav2_bt_navigator',
             executable='bt_navigator',
             name='bt_navigator',
             output='screen',
-            parameters=[nav2_params]
+            parameters=[nav2_params],
+            # arguments=['--ros-args', '--log-level', 'bt_navigator:=debug']
+
         ),
         Node(
             package='nav2_waypoint_follower',
             executable='waypoint_follower',
             name='waypoint_follower',
             output='screen',
-            parameters=[nav2_params]
+            parameters=[nav2_params],
+            # arguments=['--ros-args', '--log-level', 'waypoint_follower:=debug']
+
         ),
         Node(
             package='nav2_lifecycle_manager',
             executable='lifecycle_manager',
             name='lifecycle_manager_navigation',
             output='screen',
-            parameters=[nav2_params]
+            parameters=[nav2_params],
+            # arguments=['--ros-args', '--log-level', 'lifecycle_manager_navigation:=debug']
+
         ),
     ])
 

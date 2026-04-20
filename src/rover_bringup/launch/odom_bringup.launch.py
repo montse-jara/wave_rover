@@ -21,23 +21,34 @@ def generate_launch_description():
         'rf2o.yaml'
     )
 
+    ekf_params = os.path.join(
+        bringup_dir,
+        'config',
+        'ekf.yaml'
+    )
+
     return LaunchDescription([
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(base_launch)
         ),
 
-    Node(
-        package='rf2o_laser_odometry',
-        executable='rf2o_laser_odometry_node',
-        output='screen',
-        parameters=[rf2o_params],
-        remappings=[
-            ('scan', '/scan'),
-            ('odom_rf2o', '/odom'),
-            ],
+        Node(
+            package='rf2o_laser_odometry',
+            executable='rf2o_laser_odometry_node',
+            name='rf2o_laser_odometry',
+            output='screen',
+            parameters=[rf2o_params],
+            #remappings=[
+                # ('scan', '/scan'),
+             #   ('odom_rf2o', '/odom_rf2o'),
+            #],
         ),
 
-    #deleted efk node
-
-
+        Node(
+            package='robot_localization',
+            executable='ekf_node',
+            name='ekf_filter_node',
+            output='screen',
+            parameters=[ekf_params],
+        ),
     ])
