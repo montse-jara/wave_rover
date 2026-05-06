@@ -1,0 +1,8 @@
+import Foundation
+
+enum NavigationSessionState {
+    case waitingForKeyword
+    case listeningForCommand
+    case navigating(command: String)
+    case arrived
+}
