@@ -1,0 +1,89 @@
+import SwiftUI
+
+struct HubView: View {
+    
+    @Binding var screen: AppScreen
+    @ObservedObject var viewModel: BluetoothViewModel
+    let userName: String
+    
+    @State private var pulse = false
+    
+    var body: some View {
+        
+        ZStack {
+            
+            LinearGradient(
+                colors: [.black, Color.blue.opacity(0.25)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            
+            VStack(spacing: 40) {
+                
+                Spacer()
+                
+                //STATUS
+                VStack(spacing: 10) {
+                    
+                    Text("Hi \(userName)")
+                        .font(.largeTitle.bold())
+                        .foregroundColor(.white)
+                    
+                    HStack(spacing: 8) {
+                        
+                        Circle()
+                            .fill(viewModel.connected ? Color.green : Color.red)
+                            .frame(width: 8, height: 8)
+                        
+                        Text(viewModel.connected ? "GURT is ready" : "Connecting to GURT...")
+                            .font(.subheadline)
+                            .foregroundColor(.white.opacity(0.6))
+                    }
+                }
+                
+                Spacer()
+                
+                //START BUTTON (ONLY ACTION)
+                Button {
+                    
+                    // DO NOT START SPEECH HERE
+                    screen = .navigation
+                    
+                } label: {
+                    
+                    VStack(spacing: 12) {
+                        
+                        Image(systemName: "mic.fill")
+                            .font(.system(size: 44))
+                        
+                        Text("Start Navigation")
+                            .font(.headline)
+                    }
+                    .foregroundColor(.white)
+                    .frame(width: 180, height: 180)
+                    .background(
+                        Circle()
+                            .fill(viewModel.connected ? Color.blue : Color.gray.opacity(0.4))
+                            .shadow(color: .blue.opacity(0.3), radius: 20)
+                    )
+                    .scaleEffect(pulse ? 1.04 : 1.0)
+                    .animation(.easeInOut(duration: 1.2).repeatForever(), value: pulse)
+                }
+                .disabled(!viewModel.connected)
+                .onAppear { pulse = true }
+                
+                Spacer()
+                
+                //INSTRUCTION
+                Text("When ready, tap to begin voice navigation")
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.5))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+                
+                Spacer()
+            }
+        }
+    }
+}
