@@ -1,0 +1,158 @@
+import Foundation
+import Combine
+
+final class NavigationSessionController: ObservableObject {
+    
+    // STATE
+    @Published var state: NavigationSessionState = .waitingForKeyword
+    @Published var transcript: String = ""
+    @Published var currentCommand: String = ""
+    
+    // DEPENDENCIES
+    private let viewModel: BluetoothViewModel
+    private var cancellables = Set<AnyCancellable>()
+    
+    init(viewModel: BluetoothViewModel) {
+        self.viewModel = viewModel
+    }
+    
+    // START
+    func start() {
+        
+        print("Navigation START")
+        
+        cancellables.removeAll()
+        
+        state = .waitingForKeyword
+        
+        transcript = ""
+        currentCommand = ""
+        
+        viewModel.speechManager.restartListening { [weak self] text in
+            self?.handleVoice(text)
+        }
+    }
+    
+    // STOP
+    func stop() {
+        
+        print("Navigation STOP")
+        
+        viewModel.speechManager.stopListening()
+        
+        cancellables.removeAll()
+        
+        state = .waitingForKeyword
+        transcript = ""
+        currentCommand = ""
+    }
+    
+    //ARRIVAL
+    func markArrived() {
+        
+        print("Arrived")
+        viewModel.sendCommand("ARRIVED")
+        
+        state = .arrived
+        
+        viewModel.speechManager.stopListening()
+    }
+    
+    func startNewDestination() {
+        
+        print("New destination")
+        
+        state = .waitingForKeyword
+        
+        transcript = ""
+        currentCommand = ""
+        
+        start()
+    }
+    
+    //VOICE HANDLER
+    private func handleVoice(_ text: String) {
+        
+        let lower = text.lowercased()
+        transcript = lower
+        
+        switch state {
+            
+        case .waitingForKeyword:
+            
+            if lower.contains("robot") {
+                
+                print("Wake word detected")
+                
+                viewModel.speechManager.stopListening()
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    
+                    self.state = .listeningForCommand
+                    
+                    self.viewModel.speechManager.restartListening { [weak self] text in
+                        self?.handleVoice(text)
+                    }
+                }
+            }
+            
+        case .listeningForCommand:
+            
+            if let command = parseCommand(lower) {
+                
+                print("Command:", command)
+                
+                currentCommand = command
+                
+                viewModel.sendCommand(command)
+                
+                state = .navigating(command: command)
+            }
+            
+        case .navigating:
+            break
+            
+        case .arrived:
+            break
+        }
+    }
+    
+    //PARSER
+    private func parseCommand(_ text: String) -> String? {
+        
+        let map: [String: String] = [
+
+            "bathroom": "BATHROOM",
+            "restroom": "BATHROOM",
+            "toilet": "BATHROOM",
+            "washroom": "BATHROOM",
+
+            "exit": "EXIT",
+            "leave": "EXIT",
+            "outside": "EXIT",
+
+            "front desk": "FRONT_DESK",
+            "desk": "FRONT_DESK",
+            "reception": "FRONT_DESK",
+            "help": "FRONT_DESK",
+
+            "locker room": "LOCKER_ROOM",
+            "lockers": "LOCKER_ROOM",
+            "changing room": "LOCKER_ROOM",
+
+            "game": "BASKETBALL",
+            "games": "BASKETBALL",
+            "arcade": "BASKETBALL",
+            "arcade game": "BASKETBALL",
+            "basketball game": "BASKETBALL"
+        ]
+        
+        for (key, value) in map {
+            if text.contains(key) {
+                return value
+            }
+        }
+        
+        return nil
+    }
+}
