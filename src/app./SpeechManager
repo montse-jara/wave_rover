@@ -1,0 +1,133 @@
+import Foundation
+import Speech
+import AVFoundation
+import Combine
+
+final class SpeechManager: ObservableObject {
+    
+    //Speech Engine
+    private let recognizer = SFSpeechRecognizer()
+    private let audioEngine = AVAudioEngine()
+    
+    private var request: SFSpeechAudioBufferRecognitionRequest?
+    private var task: SFSpeechRecognitionTask?
+    
+    //Output
+    @Published var transcript: String = ""
+    
+    // State
+    private var isListening = false
+    
+    //Permissions
+    func requestPermission() {
+        SFSpeechRecognizer.requestAuthorization { status in
+            print("Speech permission:", status.rawValue)
+        }
+    }
+    
+    //HARD RESTART 
+    func restartListening(onText: @escaping (String) -> Void) {
+        
+        print("HARD RESTART speech session")
+        
+        stopListening()
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            self.startListening(onText: onText)
+        }
+    }
+    
+    //START LISTENING
+    func startListening(onText: @escaping (String) -> Void) {
+        
+        if isListening {
+            print("Already listening — ignoring start")
+            return
+        }
+        
+        isListening = true
+        
+        print("🎤 startListening called")
+        
+        //AUDIO SESSION
+        let audioSession = AVAudioSession.sharedInstance()
+        do {
+            try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
+            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+        } catch {
+            print("Audio session error:", error)
+        }
+        
+        transcript = ""
+        request = SFSpeechAudioBufferRecognitionRequest()
+        guard let request = request else { return }
+        
+        request.shouldReportPartialResults = true
+        
+        let inputNode = audioEngine.inputNode
+        
+        task = recognizer?.recognitionTask(with: request) { [weak self] result, error in
+            
+            guard let self = self else { return }
+            
+            if let result = result {
+                
+                let text = result.bestTranscription.formattedString.lowercased()
+                
+                DispatchQueue.main.async {
+                    self.transcript = text
+                    onText(text)
+                }
+                
+                print("📝 Transcript:", text)
+            }
+            
+            if let error = error {
+                print("Speech error:", error)
+                self.stopListening()
+            }
+        }
+        
+        //AUDIO TAP
+        let format = inputNode.outputFormat(forBus: 0)
+        
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
+            request.append(buffer)
+        }
+        
+        audioEngine.prepare()
+        
+        do {
+            try audioEngine.start()
+            print("audio engine started")
+        } catch {
+            print("Audio engine failed:", error)
+        }
+    }
+    
+    // MARK: - STOP LISTENING (FULL TEARDOWN)
+    func stopListening() {
+        
+        guard isListening else { return }
+        
+        print("Stopping speech session")
+        
+        isListening = false
+        
+        // STOP AUDIO ENGINE
+        if audioEngine.isRunning {
+            audioEngine.stop()
+        }
+        
+        // REMOVE TAP SAFELY
+        audioEngine.inputNode.removeTap(onBus: 0)
+        
+        // CANCEL SPEECH TASK
+        request?.endAudio()
+        task?.cancel()
+        
+        // CLEAN MEMORY
+        request = nil
+        task = nil
+    }
+}
