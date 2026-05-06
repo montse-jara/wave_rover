@@ -1,0 +1,229 @@
+import Foundation
+import CoreBluetooth
+import Combine
+import UIKit
+
+final class BLEManager: NSObject, ObservableObject {
+    
+    //Published State
+    @Published var connected: Bool = false
+    @Published var lastMessage: String? = nil
+    @Published var averageRSSI: Int? = nil
+    
+    //Core Bluetooth
+    private var central: CBCentralManager!
+    private var targetPeripheral: CBPeripheral?
+    private var writeChar: CBCharacteristic?
+    
+    private let serviceUUID = CBUUID(string: "12345678-1234-1234-1234-1234567890AB")
+    private let writeUUID   = CBUUID(string: "87654321-4321-4321-4321-BA0987654321")
+    
+    // RSSI Handling
+    private var rssiReadings: [Int] = []
+    private let maxRSSIReadings = 5   // smoother signal
+    private var rssiTimer: Timer?
+    
+    // Init
+    override init() {
+        super.init()
+        central = CBCentralManager(delegate: self, queue: nil)
+    }
+    
+    // Public API
+    func sendCommand(_ text: String) {
+        guard let peripheral = targetPeripheral,
+              let characteristic = writeChar else {
+            print("Not connected or characteristic not found")
+            return
+        }
+        
+        let data = Data(text.utf8)
+        
+        peripheral.writeValue(data, for: characteristic, type: .withResponse)
+        print("Sent:", text)
+    }
+    
+    // RSSI Logic
+    private func updateRSSI(_ rssi: Int) {
+        rssiReadings.append(rssi)
+        
+        if rssiReadings.count > maxRSSIReadings {
+            rssiReadings.removeFirst()
+        }
+        
+        let avg = rssiReadings.reduce(0, +) / rssiReadings.count
+        
+        DispatchQueue.main.async {
+            self.averageRSSI = avg
+        }
+    }
+}
+
+// CBCentralManagerDelegate
+extension BLEManager: CBCentralManagerDelegate {
+    
+    func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        switch central.state {
+        case .poweredOn:
+            print("Bluetooth ON — scanning for robot")
+            startScanning()
+        default:
+            print("Bluetooth state not ready:", central.state.rawValue)
+        }
+    }
+    
+    private func startScanning() {
+        central.scanForPeripherals(withServices: [serviceUUID], options: nil)
+    }
+    
+    func centralManager(_ central: CBCentralManager,
+                        didDiscover peripheral: CBPeripheral,
+                        advertisementData: [String : Any],
+                        rssi RSSI: NSNumber) {
+        
+        print("🔎 Found peripheral:", peripheral.name ?? "Unknown")
+        
+        // Prevent reconnecting to random devices
+        guard targetPeripheral == nil else { return }
+        
+        targetPeripheral = peripheral
+        targetPeripheral?.delegate = self
+        
+        central.stopScan()
+        central.connect(peripheral, options: nil)
+    }
+    
+    func centralManager(_ central: CBCentralManager,
+                        didConnect peripheral: CBPeripheral) {
+        
+        print("Connected to:", peripheral.name ?? "Unknown")
+        
+        DispatchQueue.main.async {
+            self.connected = true
+        }
+        
+        peripheral.discoverServices([serviceUUID])
+        
+        // Start RSSI monitoring
+        startRSSIMonitoring(peripheral)
+    }
+    
+    func centralManager(_ central: CBCentralManager,
+                        didDisconnectPeripheral peripheral: CBPeripheral,
+                        error: Error?) {
+        
+        print("Disconnected:", peripheral.name ?? "Unknown",
+              error?.localizedDescription ?? "")
+        
+        DispatchQueue.main.async {
+            self.connected = false
+            self.averageRSSI = nil
+        }
+        
+        stopRSSIMonitoring()
+        
+        // 🔁 Reset state for clean reconnect
+        targetPeripheral = nil
+        writeChar = nil
+        
+        // 🔁 Restart scanning
+        startScanning()
+    }
+}
+
+// MARK: - CBPeripheralDelegate
+extension BLEManager: CBPeripheralDelegate {
+    
+    func peripheral(_ peripheral: CBPeripheral,
+                    didDiscoverServices error: Error?) {
+        
+        if let error = error {
+            print("Service discovery error:", error)
+            return
+        }
+        
+        guard let services = peripheral.services else { return }
+        
+        for service in services {
+            peripheral.discoverCharacteristics([writeUUID], for: service)
+        }
+    }
+    
+    func peripheral(_ peripheral: CBPeripheral,
+                    didDiscoverCharacteristicsFor service: CBService,
+                    error: Error?) {
+        
+        if let error = error {
+            print("Characteristic discovery error:", error)
+            return
+        }
+        
+        guard let characteristics = service.characteristics else { return }
+        
+        for characteristic in characteristics {
+            
+            if characteristic.uuid == writeUUID {
+                writeChar = characteristic
+                
+                print("Write characteristic found")
+                
+                // Enable notifications if supported
+                if characteristic.properties.contains(.notify) {
+                    peripheral.setNotifyValue(true, for: characteristic)
+                }
+            }
+        }
+    }
+    
+    func peripheral(_ peripheral: CBPeripheral,
+                    didUpdateValueFor characteristic: CBCharacteristic,
+                    error: Error?) {
+        
+        if let error = error {
+            print("Read error:", error)
+            return
+        }
+        
+        guard let data = characteristic.value else { return }
+        
+        let text = String(decoding: data, as: UTF8.self)
+        
+        DispatchQueue.main.async {
+            self.lastMessage = text
+        }
+        
+        print("Received:", text)
+    }
+    
+    func peripheral(_ peripheral: CBPeripheral,
+                    didReadRSSI RSSI: NSNumber,
+                    error: Error?) {
+        
+        if let error = error {
+            print("RSSI read error:", error)
+            return
+        }
+        
+        let value = RSSI.intValue
+        updateRSSI(value)
+        
+        print("RSSI:", value)
+    }
+}
+
+// RSSI Timer
+extension BLEManager {
+    
+    private func startRSSIMonitoring(_ peripheral: CBPeripheral) {
+        stopRSSIMonitoring()
+        
+        rssiTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            peripheral.readRSSI()
+        }
+    }
+    
+    private func stopRSSIMonitoring() {
+        rssiTimer?.invalidate()
+        rssiTimer = nil
+    }
+}
