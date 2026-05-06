@@ -1,0 +1,34 @@
+import SwiftUI
+
+struct RSSIView: View {
+    
+    let rssi: Int?
+    let outOfRange: Bool
+    
+    var body: some View {
+        
+        let value = rssi ?? -100
+        let color = rssiColor(for: value, outOfRange: outOfRange)
+        let icon = rssiIcon(for: value)
+        
+        Image(systemName: icon)
+            .foregroundColor(color)
+            .font(.title2)
+            .padding(10)
+            .background(Color.white.opacity(0.08))
+            .clipShape(Capsule())
+    }
+    
+    private func rssiColor(for rssi: Int, outOfRange: Bool) -> Color {
+        if outOfRange { return .red }
+        if rssi >= -60 { return .green }
+        if rssi >= -75 { return .yellow }
+        return .red
+    }
+    
+    private func rssiIcon(for rssi: Int) -> String {
+        if rssi >= -60 { return "wifi" }
+        if rssi >= -75 { return "wifi.exclamationmark" }
+        return "wifi.slash"
+    }
+}
