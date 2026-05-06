@@ -1,0 +1,157 @@
+import Foundation
+import Combine
+
+final class BluetoothViewModel: ObservableObject {
+    
+    // STATE
+    @Published var appStateContext: VoiceCommandContext
+    @Published var currentCommand: String = ""
+    
+    // BLE / STATUS
+    @Published var connected: Bool = false
+    @Published var lastMessage: String? = nil
+    @Published var averageRSSI: Int? = nil
+    @Published var outOfRange: Bool = false
+    
+    // SPEECH
+    @Published var speechManager = SpeechManager()
+    
+    let bleManager = BLEManager()
+    private var cancellables = Set<AnyCancellable>()
+    
+    // COMMAND MAP
+    private let commandMap: [String: String] = [
+        "mens bathroom": "BATHROOM",
+        "restroom": "BATHROOM",
+        "toilet": "BATHROOM",
+        
+        "game": "BASKETBALL",
+        "basketball game": "BASKETBALL"
+        
+    ]
+    
+    // INIT
+    init() {
+        appStateContext = VoiceCommandContext(initialState: WaitingToPairState())
+        setupBindings()
+    }
+    
+    // BINDINGS
+    private func setupBindings() {
+        
+        bleManager.$connected
+            .assign(to: \.connected, on: self)
+            .store(in: &cancellables)
+        
+        bleManager.$lastMessage
+            .assign(to: \.lastMessage, on: self)
+            .store(in: &cancellables)
+        
+        bleManager.$averageRSSI
+            .assign(to: \.averageRSSI, on: self)
+            .store(in: &cancellables)
+        
+        bleManager.$averageRSSI
+            .map { rssi -> Bool in
+                guard let rssi = rssi else { return true }
+                return rssi < -75
+            }
+            .assign(to: \.outOfRange, on: self)
+            .store(in: &cancellables)
+    }
+    
+    // STATE CONTROL
+    func activateListening() {
+        appStateContext.setState(ListeningKeywordState())
+    }
+    
+    func reset() {
+        
+        print("SYSTEM RESET")
+        
+        speechManager.stopListening()
+        
+        appStateContext.setState(ListeningKeywordState())
+        currentCommand = ""
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            self.startVoiceFlow()
+        }
+    }
+    
+    // BLE SEND
+    func sendCommand(_ command: String) {
+        print("BLE SEND:", command)
+        bleManager.sendCommand(command)
+    }
+    
+    func stopRobot() {
+        bleManager.sendCommand("STOP")
+    }
+    
+    func executeCommand(_ command: String) {
+        
+        currentCommand = command
+        
+        sendCommand(command)
+        
+        appStateContext.currentState.handleCommand(command, context: appStateContext)
+    }
+    
+    // VOICE FLOW ENTRY POINT
+    func startVoiceFlow() {
+        
+        print("Voice flow started")
+        
+        speechManager.restartListening { [weak self] text in
+            
+            guard let self = self else { return }
+            
+            self.handleVoiceInput(text)
+        }
+    }
+    
+    // CORE VOICE LOGIC (CLEAN SEPARATION)
+    private func handleVoiceInput(_ text: String) {
+        
+        let lower = text.lowercased()
+        
+        print("Heard:", lower)
+        
+        // WAKE WORD MODE
+        if appStateContext.currentState is ListeningKeywordState {
+            
+            if lower.contains("robot") {
+                
+                print("Wake word detected")
+                
+                speechManager.stopListening()
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    
+                    self.appStateContext.setState(ListeningCommandState())
+                    
+                    self.startVoiceFlow()
+                }
+            }
+            
+            return
+        }
+        
+        // COMMAND MODE
+        if appStateContext.currentState is ListeningCommandState {
+            
+            for (keyword, command) in commandMap {
+                
+                if lower.contains(keyword) {
+                    
+                    print("Command detected:", command)
+                    
+                    executeCommand(command)
+                    
+                    return
+                }
+            }
+        }
+    }
+}
