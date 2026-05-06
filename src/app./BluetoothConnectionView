@@ -1,0 +1,135 @@
+import SwiftUI
+
+struct BluetoothConnectionView: View {
+    
+    @Binding var screen: AppScreen
+    @ObservedObject var viewModel: BluetoothViewModel
+    
+    @State private var pulse = false
+    
+    //Prevent duplicate CONNECTED sends
+    @State private var didSendConnected = false
+    
+    var body: some View {
+        
+        ZStack {
+            
+            LinearGradient(
+                colors: [.black, Color.blue.opacity(0.25)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            
+            VStack(spacing: 28) {
+                
+                Spacer()
+                
+                Circle()
+                    .fill(
+                        viewModel.connected
+                        ? Color.green
+                        : Color.gray.opacity(0.3)
+                    )
+                    .frame(width: 150, height: 150)
+                    .shadow(
+                        color: (
+                            viewModel.connected
+                            ? Color.green
+                            : Color.blue
+                        ).opacity(0.6),
+                        radius: 20
+                    )
+                    .scaleEffect(
+                        !viewModel.connected && pulse
+                        ? 1.05
+                        : 1.0
+                    )
+                    .animation(
+                        viewModel.connected
+                        ? .default
+                        : .easeInOut(duration: 1)
+                            .repeatForever(autoreverses: true),
+                        value: pulse
+                    )
+                    .overlay(
+                        Image(systemName: "bluetooth")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 70)
+                            .foregroundColor(
+                                viewModel.connected
+                                ? .white
+                                : .blue
+                            )
+                    )
+                
+                Text(
+                    viewModel.connected
+                    ? "Connected to Robot"
+                    : "Searching for Robot..."
+                )
+                .font(.title2.weight(.semibold))
+                .foregroundColor(.white)
+                
+                Text(
+                    viewModel.connected
+                    ? "Launching navigation system..."
+                    : "Make sure the robot is powered on."
+                )
+                .font(.subheadline)
+                .foregroundColor(.white.opacity(0.7))
+                .padding(.horizontal)
+                .multilineTextAlignment(.center)
+                
+                Spacer()
+            }
+        }
+        
+        // Start pulse animation
+        .onAppear {
+            
+            if !viewModel.connected {
+                pulse = true
+            }
+            
+            //If already connected, send CONNECTED
+            sendConnectedIfNeeded()
+        }
+        
+        // If connection happens later, send CONNECTED
+        .onReceive(viewModel.$connected) { connected in
+            
+            if connected {
+                
+                print("Bluetooth connected detected")
+                
+                sendConnectedIfNeeded()
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                    
+                    withAnimation {
+                        screen = .hub
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - Guaranteed Handshake
+    
+    private func sendConnectedIfNeeded() {
+        
+        guard viewModel.connected else { return }
+        guard !didSendConnected else { return }
+        
+        didSendConnected = true
+        
+        print("Sending CONNECTED handshake")
+        
+        // Small delay improves BLE reliability
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            viewModel.sendCommand("CONNECTED")
+        }
+    }
+}
