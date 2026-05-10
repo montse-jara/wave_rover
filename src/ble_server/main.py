@@ -87,7 +87,7 @@ def main():
         error_handler=lambda e: print("Advertising Failed:", e)
     )
 
-    # Run both loops
+    #change
     loop = GLib.MainLoop()
 
     try:
