@@ -1,12 +1,27 @@
+"""Launchs Nav2 
+
+This module launches odometry, localization,
+and navigation within the same file. The user 
+may run into issues if the Lidar sensor fails or 
+if there is a timing issue with each nav2 plugin.
+For better resuults launch odometry,localization, and
+navigation separately.
+
+usage:
+    ros2 launch rover_bringup nav2_bringup.launch.py
+    
+"""
+
 from launch import LaunchDescription
 from launch.actions import TimerAction
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 import os
 
-
+# this function launches all necessary nav2 plugin and rover bring up 
 def generate_launch_description():
     bringup_dir = get_package_share_directory('rover_bringup')
+    # plugins are defined in the params file 
     nav2_params = os.path.join(bringup_dir, 'config', 'nav2_params.yaml')
 
     localization_nodes = [
@@ -79,6 +94,7 @@ def generate_launch_description():
     ]
 
     return LaunchDescription([
+        # localization nodes must be launched before navigation nodes
         *localization_nodes,
         TimerAction(
             period=8.0,
