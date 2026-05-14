@@ -1,6 +1,6 @@
 # Wave Rover ROS 2 Navigation Stack
 
-ROS 2 Jazzy workspace for a Wave Rover robot using:
+hardware requirements:
 
 - Rubik Pi 3
 - Slamtec RPLidar A1
@@ -15,13 +15,20 @@ This repository contains only the project-specific packages:
 - `wave_rover_base` - base motor command node
 - `rover_description` - URDF and robot_state_publisher
 - `rover_bringup` - launch files and configs
-
-Third-party dependencies are installed with `vcstool` using `dependencies.repos`.
+- 'ble_server' - handles bluetooth connectivity
+- 'app' - creates moblie application
 
 ## Requirements
 
 - Ubuntu 24.04
 - ROS 2 Jazzy
+
+## Open source packages needed:
+- 'bno055' - ros2 package for imu driver
+- 'rf2o_laser_odometry' - open source package for lidar odometry
+- 'sllidar_ros2' - open source package for Lidar sensor
+- 'Nav2' - ros2 package for navigation
+- 'Slam Toolbox' - ros2 package for SLAM
 
 ## Clone
 
