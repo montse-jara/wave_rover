@@ -1,0 +1,191 @@
+import SwiftUI
+
+struct NavigationSessionView: View {
+    
+    @StateObject var controller: NavigationSessionController
+    @Binding var screen: AppScreen
+    
+    @State private var pulse = false
+    
+    var body: some View {
+        
+        ZStack {
+            
+            LinearGradient(
+                colors: [.black, Color.blue.opacity(0.2)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            
+            VStack(spacing: 30) {
+                
+                Spacer()
+                
+                content
+                
+                Spacer()
+            }
+        }
+        .onAppear {
+            controller.start()
+        }
+        .onDisappear {
+            controller.stop()
+        }
+    }
+    
+    //CONTENT ROUTER
+    @ViewBuilder
+    private var content: some View {
+        
+        switch controller.state {
+            
+        case .waitingForKeyword:
+            idleView
+            
+        case .listeningForCommand:
+            listeningView
+            
+        case .navigating:
+            navigationView
+            
+        case .arrived:
+            arrivalView
+        }
+    }
+}
+
+
+extension NavigationSessionView {
+    
+    var idleView: some View {
+        
+        VStack(spacing: 20) {
+            
+            Circle()
+                .fill(Color.gray.opacity(0.4))
+                .frame(width: 140, height: 140)
+                .overlay(
+                    Image(systemName: "mic.fill")
+                        .font(.system(size: 50))
+                        .foregroundColor(.gray)
+                )
+            
+            Text("Say \"robot\" to begin")
+                .foregroundColor(.white)
+        }
+    }
+}
+
+extension NavigationSessionView {
+    
+    var listeningView: some View {
+        
+        VStack(spacing: 20) {
+            
+            Circle()
+                .fill(Color.blue)
+                .frame(width: 140, height: 140)
+                .overlay(
+                    Image(systemName: "mic.fill")
+                        .font(.system(size: 50))
+                        .foregroundColor(.white)
+                )
+                .scaleEffect(pulse ? 1.05 : 1.0)
+                .animation(.easeInOut(duration: 0.8).repeatForever(), value: pulse)
+                .onAppear { pulse = true }
+            
+            Text("Listening...")
+                .foregroundColor(.white)
+            
+            Text(controller.transcript)
+                .foregroundColor(.white.opacity(0.7))
+                .padding(.horizontal)
+        }
+    }
+}
+
+extension NavigationSessionView {
+    
+    var navigationView: some View {
+        
+        VStack(spacing: 20) {
+            
+            Circle()
+                .fill(Color.purple)
+                .frame(width: 140, height: 140)
+                .overlay(
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 50))
+                        .foregroundColor(.white)
+                )
+                .onTapGesture {
+                    controller.markArrived()
+                }
+            
+            Text("Navigating")
+                .foregroundColor(.white)
+            
+            Button {
+                controller.stop()
+                screen = .hub
+            } label: {
+                
+                Text("STOP NAVIGATION")
+                    .foregroundColor(.white)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.red)
+                    .cornerRadius(16)
+                    .padding(.horizontal, 40)
+            }
+        }
+    }
+}
+
+extension NavigationSessionView {
+    
+    var arrivalView: some View {
+        
+        VStack(spacing: 30) {
+            
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 80))
+                .foregroundColor(.green)
+            
+            Text("Destination Arrived")
+                .font(.title2.bold())
+                .foregroundColor(.white)
+            
+            Text("Would you like to go anywhere else?")
+                .foregroundColor(.white.opacity(0.7))
+            
+            VStack(spacing: 16) {
+                
+                Button {
+                    controller.startNewDestination()
+                } label: {
+                    Text("NEW DESTINATION")
+                        .foregroundColor(.white)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.blue)
+                        .cornerRadius(16)
+                }
+                
+                Button {
+                    screen = .hub
+                } label: {
+                    Text("FINISHED")
+                        .foregroundColor(.white)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.gray)
+                        .cornerRadius(16)
+                }
+            }
+            .padding(.horizontal, 40)
+        }
+    }
+}

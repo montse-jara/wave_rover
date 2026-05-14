@@ -1,10 +1,19 @@
+"""Launches Nodes for odom
+
+This module launches rover bringup (all
+the drivers for the hardware) and launches
+odometry nodes such as rf2o(laser odometry) 
+and efk (fuses rf2o and imu).
+
+usage:
+    ros2 rover_bringup odom_brinup.launch.py 
+"""
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 import os
-
 
 def generate_launch_description():
     bringup_dir = get_package_share_directory('rover_bringup')
@@ -14,7 +23,8 @@ def generate_launch_description():
         'launch',
         'base_bringup.launch.py'
     )
-
+    
+    # the param files are in the config folder
     rf2o_params = os.path.join(
         bringup_dir,
         'config',

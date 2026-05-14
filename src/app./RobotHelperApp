@@ -1,0 +1,46 @@
+import SwiftUI
+
+@main
+struct RobotHelperApp: App {
+    
+    @State private var screen: AppScreen = .intro
+    @State private var userName: String = ""
+    
+    // shared BluetoothViewModel
+    @StateObject private var viewModel = BluetoothViewModel()
+    
+    var body: some Scene {
+        WindowGroup {
+            
+            switch screen {
+                
+            case .intro:
+                IntroView(screen: $screen, userName: $userName)
+
+            case .bluetooth:
+                BluetoothConnectionView(screen: $screen, viewModel: viewModel)
+
+            case .hub:
+                HubView(
+                    screen: $screen,
+                    viewModel: viewModel,
+                    userName: userName
+                )
+
+            case .main:
+                ContentView(
+                        userName: userName,
+                        viewModel: viewModel
+                    )
+                
+            case .navigation:
+
+                NavigationSessionView(
+                    controller: NavigationSessionController(viewModel: viewModel),
+                    screen: $screen
+                )            }
+            
+            
+            }
+        }
+    }

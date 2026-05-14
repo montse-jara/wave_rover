@@ -1,0 +1,66 @@
+import Foundation
+import Combine
+
+protocol VoiceState {
+    func handleCommand(_ command: String, context: VoiceCommandContext)
+}
+
+class VoiceCommandContext: ObservableObject {
+    @Published private(set) var currentState: VoiceState
+    
+    init(initialState: VoiceState) {
+        self.currentState = initialState
+    }
+    
+    func setState(_ state: VoiceState) {
+        currentState = state
+    }
+    
+    func executeCommand(_ command: String) {
+        currentState.handleCommand(command, context: self)
+    }
+}
+
+//Waiting to Pair
+class WaitingToPairState: VoiceState {
+    func handleCommand(_ command: String, context: VoiceCommandContext) {
+        print("Paired! Moving to ListeningKeyword")
+        context.setState(ListeningKeywordState())
+    }
+}
+
+//Listening for Key Word
+class ListeningKeywordState: VoiceState {
+    func handleCommand(_ command: String, context: VoiceCommandContext) {
+        print("Transition ListeningKeyword -> ListeningCommand")
+        context.setState(ListeningCommandState())
+    }
+}
+
+//Listening for Command
+class ListeningCommandState: VoiceState {
+    func handleCommand(_ command: String, context: VoiceCommandContext) {
+        print("Transition ListeningCommand -> CommandReceived with command: \(command)")
+        context.setState(CommandReceivedState())
+    }
+}
+
+//Command Received
+class CommandReceivedState: VoiceState {
+    func handleCommand(_ command: String, context: VoiceCommandContext) {
+        print("Transition CommandReceived -> Navigating")
+        
+        // Automatically move to Navigating after 2 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            context.setState(NavigatingState())
+        }
+    }
+}
+
+//Navigating
+class NavigatingState: VoiceState {
+    func handleCommand(_ command: String, context: VoiceCommandContext) {
+        print("Transition Navigating -> ListeningKeyword")
+        context.setState(ListeningKeywordState())
+    }
+}

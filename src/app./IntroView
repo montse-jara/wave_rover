@@ -1,0 +1,83 @@
+import SwiftUI
+
+struct IntroView: View {
+    
+    @Binding var screen: AppScreen
+    @Binding var userName: String
+    
+    @State private var localName: String = ""
+    
+    var body: some View {
+        
+        ZStack {
+            
+            LinearGradient(
+                colors: [.black, Color.blue.opacity(0.25)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            
+            VStack(spacing: 24) {
+                
+                Spacer()
+                
+                // Title
+                Text("Welcome to GURT")
+                    .font(.largeTitle.bold())
+                    .foregroundColor(.white)
+                
+                // Subtitle
+                Text("Guided User Robotic Transport")
+                    .font(.headline)
+                    .foregroundColor(.white.opacity(0.7))
+                
+                // Description
+                Text("""
+GURT is an intelligent indoor navigation assistant designed to guide users safely and efficiently to different locations using voice interaction and a connected robotic system.
+
+Simply speak your destination, and GURT will handle the rest.
+""")
+                .multilineTextAlignment(.center)
+                .foregroundColor(.white.opacity(0.8))
+                .padding(.horizontal, 24)
+                
+                //Input
+                TextField("Enter your name", text: $localName)
+                    .textFieldStyle(.roundedBorder)
+                    .padding(.horizontal, 40)
+                
+                //Button
+                Button {
+                    
+                    guard !localName.isEmpty else { return }
+                    
+                    userName = localName
+                    
+                    withAnimation {
+                        screen = .bluetooth
+                    }
+                    
+                } label: {
+                    
+                    Text("Begin Setup")
+                        .font(.headline)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(localName.isEmpty ? Color.gray : Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                        .padding(.horizontal, 40)
+                }
+                .disabled(localName.isEmpty)
+                
+                Spacer()
+                
+                Text("Powered by advanced embedded systems & voice AI technology")
+                    .font(.footnote)
+                    .foregroundColor(.white.opacity(0.4))
+                    .padding(.bottom, 10)
+            }
+        }
+    }
+}

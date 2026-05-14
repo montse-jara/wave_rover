@@ -1,0 +1,56 @@
+import SwiftUI
+
+struct StateView: View {
+    
+    var circleColor: Color
+    var icon: String
+    var iconColor: Color
+    var title: String
+    var subtitle: String?
+    var titleColor: Color = .white
+    var isListening: Bool = false
+    
+    @State private var pulse = false
+    
+    var body: some View {
+        
+        VStack(spacing: 22) {
+            
+            Circle()
+                .fill(circleColor)
+                .frame(width: 150, height: 150)
+                .shadow(color: circleColor.opacity(0.6), radius: 20)
+                .scaleEffect(isListening && pulse ? 1.05 : 1.0)
+                .animation(
+                    isListening ?
+                    .easeInOut(duration: 1).repeatForever(autoreverses: true) :
+                    .default,
+                    value: pulse
+                )
+                .overlay(
+                    Image(systemName: icon)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 80)
+                        .foregroundColor(iconColor)
+                )
+            
+            Text(title)
+                .font(.title2.weight(.semibold))
+                .foregroundColor(titleColor)
+            
+            if let subtitle = subtitle {
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.7))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
+        }
+        .onAppear {
+            if isListening {
+                pulse = true
+            }
+        }
+    }
+}

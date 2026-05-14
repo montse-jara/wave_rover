@@ -1,0 +1,113 @@
+import SwiftUI
+
+enum AppScreen {
+    case intro
+    case hub
+    case bluetooth
+    case main
+    case navigation
+}
+
+import SwiftUI
+
+struct ContentView: View {
+    
+    let userName: String
+    @ObservedObject var viewModel: BluetoothViewModel
+    
+    @State private var isActive = false
+    
+    var body: some View {
+        
+        ZStack {
+            
+            LinearGradient(
+                colors: [.black, Color.purple.opacity(0.25)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            
+            VStack(spacing: 30) {
+                
+                // Header
+                VStack(spacing: 10) {
+                    
+                    Text("Navigation Active")
+                        .font(.largeTitle.bold())
+                        .foregroundColor(.white)
+                    
+                    Text("Say your destination")
+                        .foregroundColor(.white.opacity(0.7))
+                }
+                .padding(.top, 40)
+                
+                Spacer()
+                
+                //Mic UI
+                Circle()
+                    .fill(Color.blue.opacity(0.3))
+                    .frame(width: 160, height: 160)
+                    .overlay(
+                        Image(systemName: "mic.fill")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 70)
+                            .foregroundColor(.white)
+                    )
+                    .scaleEffect(isActive ? 1.05 : 1.0)
+                    .animation(
+                        .easeInOut(duration: 1).repeatForever(autoreverses: true),
+                        value: isActive
+                    )
+                
+                //Transcript
+                Text(
+                    viewModel.speechManager.transcript.isEmpty
+                    ? "Listening..."
+                    : viewModel.speechManager.transcript
+                )
+                .foregroundColor(.white)
+                .font(.title3)
+                .multilineTextAlignment(.center)
+                .padding()
+                
+                // Command
+                if !viewModel.currentCommand.isEmpty {
+                    
+                    Text("Command: \(viewModel.currentCommand)")
+                        .foregroundColor(.green)
+                        .font(.headline)
+                }
+                
+                Spacer()
+                
+                // STOP BUTTON
+                Button {
+                    
+                    viewModel.speechManager.stopListening()
+                    viewModel.reset()
+                    
+                } label: {
+                    
+                    Text("STOP NAVIGATION")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.red)
+                        .cornerRadius(16)
+                        .padding(.horizontal, 30)
+                }
+                
+                Spacer()
+            }
+        }
+        .onAppear {
+            isActive = true
+            
+            // Start ONLY navigation voice session
+            viewModel.startVoiceFlow()
+        }
+    }
+}

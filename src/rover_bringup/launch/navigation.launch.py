@@ -1,3 +1,16 @@
+"""Launches Navigation Nodes 
+
+This module launches all the Nav2 plugins
+responsible for navigation. Before launching this
+file odometry must be running in one terminal 
+and localization must be running in another. Additionally 
+an inital pose must be already set.
+
+usage:
+    ros2 launch rover_bringup navigation.launch.py 
+
+"""
+
 from launch import LaunchDescription
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
@@ -6,9 +19,11 @@ import os
 
 def generate_launch_description():
     bringup_dir = get_package_share_directory('rover_bringup')
+    # plugins are defined in the params file 
     nav2_params = os.path.join(bringup_dir, 'config', 'nav2_params.yaml')
 
     return LaunchDescription([
+        # uncomment arguements for debugging 
         Node(
             package='nav2_planner',
             executable='planner_server',

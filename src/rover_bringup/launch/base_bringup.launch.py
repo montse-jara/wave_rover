@@ -1,3 +1,14 @@
+"""Launches Hardware
+This module launches the drivers for 
+each hardware component such as the 
+IMU the lidar and the wave rover base.
+user needs to create rules for defining ports 
+hardware is connected to.
+
+usage:
+    ros2 launch rover_bringup base_bringup.launch.py
+"""
+# imports
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -5,7 +16,7 @@ from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 import os
 
-
+# This function launches each node 
 def generate_launch_description():
     rover_description_dir = get_package_share_directory('rover_description')
     bringup_dir = get_package_share_directory('rover_bringup')
@@ -15,7 +26,7 @@ def generate_launch_description():
         'launch',
         'display.launch.py'
     )
-
+    # param file for imu
     bno055_params = os.path.join(
         bringup_dir,
         'config',
@@ -23,6 +34,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        # node for robot
         Node(
             package='wave_rover_base',
             executable='cmd_vel_to_serial',
@@ -39,6 +51,7 @@ def generate_launch_description():
             PythonLaunchDescriptionSource(robot_description_launch)
         ),
 
+        # node for imu
         Node(
             package='bno055',
             executable='bno055',
@@ -47,6 +60,7 @@ def generate_launch_description():
             parameters=[bno055_params]
         ),
 
+        # node for lidar
         Node(
             package='sllidar_ros2',
             executable='sllidar_node',
