@@ -15,8 +15,8 @@ This repository contains only the project-specific packages:
 - `wave_rover_base` - base motor command node
 - `rover_description` - URDF and robot_state_publisher
 - `rover_bringup` - launch files and configs
-- 'ble_server' - handles bluetooth connectivity
-- 'app' - creates moblie application
+- `ble_server` - handles bluetooth connectivity
+- `app` - creates moblie application
 
 ## Requirements
 
@@ -24,11 +24,11 @@ This repository contains only the project-specific packages:
 - ROS 2 Jazzy
 
 ## Open source packages needed:
-- 'bno055' - ros2 package for imu driver
-- 'rf2o_laser_odometry' - open source package for lidar odometry
-- 'sllidar_ros2' - open source package for Lidar sensor
-- 'Nav2' - ros2 package for navigation
-- 'Slam Toolbox' - ros2 package for SLAM
+- `bno055` - ros2 package for imu driver
+- `rf2o_laser_odometry` - open source package for lidar odometry
+- `sllidar_ros2` - open source package for Lidar sensor
+- `Nav2` - ros2 package for navigation
+- `Slam Toolbox` - ros2 package for SLAM
 
 ## Clone
 
