@@ -28,4 +28,4 @@ Third-party dependencies are installed with `vcstool` using `dependencies.repos`
 ```bash
 mkdir -p ~/ros2_ws/src
 cd ~/ros2_ws
-git clone https://github.com/YOUR_USERNAME/wave-rover-nav.git .
+git clone https://github.com/montse-jara/wave_rover.git .
